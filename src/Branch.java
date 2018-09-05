@@ -5,9 +5,10 @@ import java.util.List;
 
 public class Branch {
     String name;
-    // where commits are stored
+    Commit head;
+    // where the name of the first commit is stored
     String fileName;
-    List<Commit> commits;
+//    List<Commit> commits;
 
     public Branch(String name) throws IOException {
         this.name = name;
@@ -19,41 +20,40 @@ public class Branch {
     }
 
     void populateBranch() throws IOException{
-        commits = new LinkedList<>();
-        // all commits are stored in a file
-        // each commit is a single line
-        // details of a commit are comma separated values in that line
         FileReader fileReader = new FileReader(fileName);
         BufferedReader bufferedReader = new BufferedReader(fileReader);
-        String line;
-        while ((line = bufferedReader.readLine()) != null) {
-            String[] commitProperties = line.split(",");
-            String name = commitProperties[0];
-            String date = commitProperties[1];
-            commits.add(new Commit(name, date));
+        String line = bufferedReader.readLine();
+        Commit tail = null;
+        while (line != null && !line.equals("null")) {
+            if(head == null) {
+                tail = head = new Commit(line);
+            } else {
+                FileReader fileReader1 = new FileReader(tail.fileName);
+                BufferedReader bufferedReader1 = new BufferedReader(fileReader1);
+                line = bufferedReader1.readLine();
+                if(!line.equals("null")) {
+                    tail.next = new Commit(line);
+                }
+                tail = tail.next;
+                bufferedReader1.close();
+            }
         }
         bufferedReader.close();
     }
 
     void log() throws IOException{
-        if(commits == null) {
-            populateBranch();
-        }
-        for (Commit commit: commits) {
+        Commit commit = head;
+        while (commit != null) {
             System.out.println(commit);
+            commit = commit.next;
         }
     }
 
     void commit(String name) throws IOException{
-        if(commits == null) {
-            populateBranch();
-        }
-        String date = new Date().toString();
-        FileWriter fileWriter = new FileWriter(fileName, true);
+        head = new Commit(name, head);
+        FileWriter fileWriter = new FileWriter(fileName);
         BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
-        bufferedWriter.write(name + "," + date + "\n");
+        bufferedWriter.write(name);
         bufferedWriter.close();
-        Commit commit = new Commit(name, date);
-        commits.add(commit);
     }
 }
